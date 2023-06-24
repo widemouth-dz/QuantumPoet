@@ -1,1 +1,1 @@
-rootProject.name = "QuantumPoet"
+rootProject.name = "quantumpoet"
