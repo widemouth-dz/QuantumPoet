@@ -22,14 +22,19 @@ inline fun IntRange.forEachWindowed(size: Int, step: Int, action: (Int) -> Unit)
 inline fun IntRange.forEachWithInterval(sample: Int, interval: Int, action: (Int) -> Unit) =
     windowed(sample, sample + interval, action)
 
-fun <T> Iterable<T>.windowed(size: Int, step: Int) = sequence<T> {
+fun <T> Iterator<T>.interval(size: Int, interval: Int) = iterator {
     var sizeCount = 0
-    var stepCount = 0
-    for (e in this@windowed) {
+    var intervalCount = 0
+    for (e in this@interval) {
         if (sizeCount++ < size) {
             yield(e)
-        }else{
             sizeCount++
+        } else if (intervalCount++ == interval) {
+            sizeCount = 0
+            intervalCount = 0
         }
     }
 }
+
+fun <T> Iterable<T>.interval(size: Int, interval: Int) = iterator().interval(size, interval)
+fun <T> Sequence<T>.interval(size: Int, interval: Int) = Sequence { iterator().interval(size, interval) }

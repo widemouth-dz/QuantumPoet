@@ -5,23 +5,23 @@ import kotlin.test.assertTrue
 class QPUTest {
     @Test
     fun hadamard() {
-        val qpu = QPU(5)
+        val qpu = QPU(25)
         qpu.hadamard()
         qpu.print(4)
     }
 
     @Test
     fun conditionHadamard() {
-        val qpu = QPU(2)
-        qpu.conditionHadamard(1 or 2, 0)
-        qpu.conditionHadamard(1, 0)
-
+        val qpu = QPU(3)
+        qpu.hadamard()
+        qpu.conditionHadamard(1 or 2, 4)
+//        qpu.conditionHadamard(1, 0)
         qpu.print()
     }
 
     @Test
     fun not() {
-        val qpu = QPU(28)
+        val qpu = QPU(25)
         qpu.not(1)
 //        qpu.print()
     }
@@ -29,7 +29,8 @@ class QPUTest {
     @Test
     fun write() {
         val qpu = QPU(25)
-        qpu.write(12)
+        qpu.write(1)
+//        qpu.print(4)
     }
 
     private fun QPU.print(count: Int = qBitCount) {

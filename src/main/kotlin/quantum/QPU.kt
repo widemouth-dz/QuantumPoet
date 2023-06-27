@@ -4,7 +4,6 @@ import FloatX
 import FloatX_One
 import FloatX_Zero
 import iteration.forEachWithInterval
-import sumOfFloatX
 import toFloatX
 import java.lang.IllegalStateException
 import kotlin.math.sqrt
@@ -13,7 +12,6 @@ import kotlin.system.measureTimeMillis
 
 
 class QPU internal constructor(val qBitCount: Int) {
-
 
     private val mStateCount = 1 shl qBitCount
 
@@ -54,8 +52,10 @@ class QPU internal constructor(val qBitCount: Int) {
 
     private fun readQBit(targetQBit: Int): Int {
         var result = 0
-        val possibility:FloatX
-        measureTimeMillis { possibility = peekQBitProbability(targetQBit) }.also { println("peekQBitProbability takes : $it") }
+        val possibility: FloatX
+        measureTimeMillis {
+            possibility = peekQBitProbability(targetQBit)
+        }.also { println("peekQBitProbability takes : $it") }
         val random = Random.nextDouble()
         // The random is in [0,1).
         require(random >= 0 && random < 1) { throw IllegalStateException("Illegal random!") }
@@ -81,12 +81,18 @@ class QPU internal constructor(val qBitCount: Int) {
 
     /** All quantum bits collapse to classic bits, and the result is [value]. */
     private fun initialize(value: Int) {
-        mQStateTermMap.forEach { it.vector.set(FloatX_Zero, FloatX_One) }
-        mQStateTermMap[value].vector.real = FloatX_One
+
+        mQStateTermMap.forEachIndexed { index, qStateTerm ->
+            mQStateTermMap[index] = qStateTerm.apply { vector.set(FloatX_Zero, FloatX_One) }
+        }
+
+        mQStateTermMap[value] = mQStateTermMap[value].apply { vector.real = FloatX_One }
     }
 
     private fun scale(scale: FloatX) {
-        mQStateTermMap.forEach { it.vector.set(it.vector * scale) }
+        mQStateTermMap.forEachIndexed { index, qStateTerm ->
+            mQStateTermMap[index] = qStateTerm.apply { vector.set(qStateTerm.vector * scale) }
+        }
     }
 
     /**
@@ -94,26 +100,22 @@ class QPU internal constructor(val qBitCount: Int) {
      * @param targetValue The classic bits to collapse to
      * @param targetQBits  The bits to collapse.
      */
-    private fun collapse(targetValue: Int, targetQBits: Int) {
-        targetQBits.oneBitSequence
-            .map { targetQBit ->
-                // the quantum bit collapses to `0` -> clear [it*(2n+1) until it*2n]
-                // the quantum bit collapses to `1` -> clear [it*2n until it*(2n+1)]
-                // equivalent to: if (targetQBit and targetValue == 0) targetQBit else 0
-                val clearOffset = targetQBit and targetValue xor targetQBit
-                mQStateSequence.drop(clearOffset).windowed(targetQBit, targetQBit * 2, true)
+    private fun collapse(targetQBits: Int, targetValue: Int) {
+        targetQBits.oneBitSequence.forEach { targetQBit ->
+            val clearOffset = targetQBit and targetValue xor targetQBit
+            (clearOffset until mStateCount).forEachWithInterval(targetQBit, targetQBit) {
+                mQStateTermMap[it] = mQStateTermMap[it].apply { vector.set(FloatX_Zero, FloatX_Zero) }
             }
-            .flatMap { windowedSequence -> windowedSequence.flatMap { it } }
-            .forEach { mQStateTermMap[it].vector.set(FloatX_Zero, FloatX_Zero) }
+        }
     }
 
-    private fun peekQBitProbability(targetQBit: Int) =
-        mQStateSequence
-            .drop(targetQBit) // Skip values smaller than `singleBit`.
-            .windowed(targetQBit, targetQBit * 2, true)
-            .flatMap { it }
-            .sumOf { mQStateTermMap[it].vector.modulusSquare.toDouble() }
-            .toFloatX()
+    private fun peekQBitProbability(targetQBit: Int): FloatX {
+        var sum = 0.0
+        (targetQBit until mStateCount).forEachWithInterval(targetQBit, targetQBit) {
+            sum += mQStateTermMap[it].vector.modulusSquare.toDouble()
+        }
+        return sum.toFloatX()
+    }
 
 
     fun conditionHadamard(targetQBits: Int, conditionMask: Int) {
@@ -128,10 +130,7 @@ class QPU internal constructor(val qBitCount: Int) {
             .asSequence()
             .filter { it and filterMark == conditionMask }
             .forEach {
-                val state0 = mQStateTermMap[it].vector
-                val state1 = mQStateTermMap[it + targetQBit].vector
-                mQStateTermMap[it].vector.set((state0 + state1) * sOneOverRoot2)
-                mQStateTermMap[it + targetQBit].vector.set((state0 - state1) * sOneOverRoot2)
+                hadamardPair(it, it + targetQBit)
             }
     }
 
@@ -141,18 +140,24 @@ class QPU internal constructor(val qBitCount: Int) {
 
     private fun hadamardQBit(targetQBit: Int) {
         mQStateRange.forEachWithInterval(targetQBit, targetQBit) {
-            val state0 = mQStateTermMap[it]
-            val state1 = mQStateTermMap[it + targetQBit]
-
-            val vector0 = (state0.vector + state1.vector) * sOneOverRoot2
-            val vector1 = (state0.vector - state1.vector) * sOneOverRoot2
-
-            state0.vector.set(vector0)
-            state1.vector.set(vector1)
-
-            mQStateTermMap[it] = state0
-            mQStateTermMap[it + targetQBit] = state1
+            hadamardPair(it, it + targetQBit)
         }
+    }
+
+    private fun hadamardPair(qBit0: Int, qBit1: Int) {
+
+        val state0 = mQStateTermMap[qBit0]
+        val state1 = mQStateTermMap[qBit1]
+
+        val vector0 = (state0.vector + state1.vector) * sOneOverRoot2
+        val vector1 = (state0.vector - state1.vector) * sOneOverRoot2
+
+        state0.vector.set(vector0)
+        state1.vector.set(vector1)
+
+        mQStateTermMap[qBit0] = state0
+        mQStateTermMap[qBit1] = state1
+
     }
 
     fun not(targetQBits: Int = mAllMask) {
