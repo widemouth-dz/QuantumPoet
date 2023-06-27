@@ -4,20 +4,20 @@ import kotlin.math.sqrt
 // typealias Complex = Pair<Double, Double>
 
 @JvmInline
-value class Complex private constructor(private val doubleArray: DoubleArray) {
-    constructor(real: Double, image: Double) : this(doubleArrayOf(real, image))
+value class Complex private constructor(private val doubleArray: FloatXArray) {
+    constructor(real: FloatX, image: FloatX) : this(floatXArrayOf(real, image))
 
-    var real: Double
+    var real: FloatX
         get() = doubleArray[0]
         set(value) {
             doubleArray[0] = value
         }
-    var image: Double
+    var image: FloatX
         get() = doubleArray[1]
         set(value) {
             doubleArray[1] = value
         }
-    val modulusSquare get() = real * real + image * image
+    val modulusSquare get():FloatX = real * real + image * image
     val modulus get() = sqrt(modulusSquare)
     val argument get() = atan2(image, real)
     operator fun plus(other: Complex) = Complex(real.plus(other.real), image.plus(other.image))
@@ -32,16 +32,16 @@ value class Complex private constructor(private val doubleArray: DoubleArray) {
 
     }
 
-    operator fun div(other: Double) = Complex(real.div(other), image.div(other))
+    operator fun div(other: FloatX) = Complex(real.div(other), image.div(other))
 
-    operator fun times(other: Double) = Complex(real.times(other), image.times(other))
+    operator fun times(other: FloatX) = Complex(real.times(other), image.times(other))
 
     fun set(value: Complex) {
         doubleArray[0] = value.doubleArray[0]
         doubleArray[1] = value.doubleArray[1]
     }
 
-    fun set(real: Double, image: Double) {
+    fun set(real: FloatX, image: FloatX) {
         doubleArray[0] = real
         doubleArray[1] = image
     }
@@ -49,7 +49,7 @@ value class Complex private constructor(private val doubleArray: DoubleArray) {
     override fun toString(): String = "$real + ${image}i"
 
     companion object {
-        val ZERO get() = Complex(0.0, 0.0)
+        val ZERO get() = Complex(FloatX_Zero, FloatX_Zero)
     }
 }
 
