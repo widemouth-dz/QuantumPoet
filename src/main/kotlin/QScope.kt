@@ -3,6 +3,5 @@ import kotlinx.coroutines.Dispatchers
 import kotlin.coroutines.CoroutineContext
 
 object QScope : CoroutineScope {
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Default
+    override val coroutineContext: CoroutineContext get() = Dispatchers.Default
 }

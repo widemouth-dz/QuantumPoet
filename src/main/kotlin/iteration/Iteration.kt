@@ -1,26 +1,24 @@
 package iteration
 
-import windowed
+/**
+ * The fast iteration for transversal with interval.
+ */
+inline fun IntRange.forEachWithInterval(sample: Int, interval: Int, drop: Int = 0, action: (Int) -> Unit) {
 
-inline fun IntRange.forEachWindowed(size: Int, step: Int, action: (Int) -> Unit) {
-    val windowLeadingIterator = this step (step)
-
-    val safeIterator =
-        if (contains(windowLeadingIterator.last + size)) windowLeadingIterator else first..last + 1 - size
+    val safeIterator = (first + drop)..(last + 1 - sample) step (sample + interval)
 
     for (windowStart in safeIterator) {
-        for (i in windowStart until windowStart + size) {
+        for (i in windowStart until windowStart + sample) {
             action(i)
         }
     }
 
-    for (tail in windowLeadingIterator.last..last) {
+    for (tail in (safeIterator.last + sample + interval)..last) {
         action(tail)
     }
 }
 
-inline fun IntRange.forEachWithInterval(sample: Int, interval: Int, action: (Int) -> Unit) =
-    windowed(sample, sample + interval, action)
+fun IntRange.drop(drop: Int) = first + drop..last
 
 fun <T> Iterator<T>.interval(size: Int, interval: Int) = iterator {
     var sizeCount = 0

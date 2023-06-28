@@ -7,12 +7,16 @@ class StandardTest {
         measureTimeMillis {
             val array = Array(1 shl 20) { Complex(0.toFloatX(), 0.toFloatX()) }
             array.forEachIndexed { index, fl ->
-                val element = array[index]
-                element.set(0.toFloatX(), 0.toFloatX())
-                array[index] = element
-//                array[index] = array[index].apply { set(0.toFloatX(), 0.toFloatX()) }
+//                val element = array[index]
+//                element.set(0.toFloatX(), 0.toFloatX())
+//                array[index] = element
+                array[index] = array[index].apply { set(0.toFloatX(), 0.toFloatX()) }
             }
         }.also { println("takes: $it ms") }
+
+
+        val pairs = arrayOf(Pair(StandardTest(),1))
+        pairs[0] = pairs[0].apply { first.apply() }
     }
 
 }

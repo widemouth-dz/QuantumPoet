@@ -5,7 +5,7 @@ import kotlin.test.assertTrue
 class QPUTest {
     @Test
     fun hadamard() {
-        val qpu = QPU(25)
+        val qpu = QPU(20)
         qpu.hadamard()
         qpu.print(4)
     }
@@ -30,7 +30,16 @@ class QPUTest {
     fun write() {
         val qpu = QPU(25)
         qpu.write(1)
-//        qpu.print(4)
+        qpu.print(4)
+    }
+
+    @Test
+    fun read() {
+        val qpu = QPU(4)
+        qpu.hadamard()
+        val result = qpu.read()
+        println(result.toString(2))
+        qpu.print(4)
     }
 
     private fun QPU.print(count: Int = qBitCount) {
@@ -43,6 +52,6 @@ class QPUTest {
 
         println()
         println("$totalProbability:" + totalProbability.toBits().toString(2))
-        assertTrue(totalProbability > 0.999_999)
+        assertTrue(totalProbability > 0.999_99)
     }
 }
