@@ -98,8 +98,6 @@ class QPU internal constructor(val qBitCount: Int) {
      * @param targetQBits  The bits to collapse.
      */
     private fun collapse(targetQBits: Int, targetValue: Int) {
-
-
         when (targetQBits.countOneBits()) {
             0 -> Unit
             in 1..2 -> targetQBits.oneBitSequence.forEach { targetQBit ->
@@ -109,8 +107,9 @@ class QPU internal constructor(val qBitCount: Int) {
                 }
             }
 
-            else -> {
-
+            else -> mQStateRange.forEach {
+                if (it and targetQBits != targetValue)
+                    mQStateTermMap[it] = mQStateTermMap[it].apply { vector.set(FloatX_Zero, FloatX_Zero) }
             }
         }
     }
@@ -147,14 +146,18 @@ class QPU internal constructor(val qBitCount: Int) {
 
         }
 
+        val filterMark = targetQBit or conditionMask
+
         when (conditionMask) {
             0 -> mQStateRange.forEachWithInterval(targetQBit, targetQBit) { hadamardPair(it, it + targetQBit) }
-            else -> {
-                val filterMark = targetQBit or conditionMask
-                mQStateRange.drop(conditionMask).forEach {
-                    if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
-                }
+            1 -> mQStateRange.drop(conditionMask).forEachWithInterval(conditionMask, conditionMask) {
+                if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
             }
+
+            else -> mQStateRange.drop(conditionMask).forEach {
+                if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
+            }
+
         }
     }
 
@@ -178,15 +181,17 @@ class QPU internal constructor(val qBitCount: Int) {
             mQStateTermMap[qBit1] = temp
         }
 
+        val filterMark = targetQBit or conditionMask
         when (conditionMask) {
             0 -> mQStateRange.forEachWithInterval(targetQBit, targetQBit) { exchangePair(it, it + targetQBit) }
-            else -> {
-                val filterMark = targetQBit or conditionMask
-                // If quantum state is meet with the condition, it must be at least greater than conditionMask.
-                mQStateRange.drop(conditionMask).forEach {
-                    if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
-                }
+            1 -> mQStateRange.drop(conditionMask).forEachWithInterval(conditionMask, conditionMask) {
+                if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
             }
+            // If quantum state is meet with the condition, it must be at least greater than conditionMask.
+            else -> mQStateRange.drop(conditionMask).forEach {
+                if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
+            }
+
         }
     }
 
@@ -215,9 +220,10 @@ class QPU internal constructor(val qBitCount: Int) {
 
         when (conditionQuBits.countOneBits()) {
             0 -> mQStateRange.forEach { phaseShiftTerm(it) }
-            1 -> mQStateRange.drop(conditionQuBits)
-                .forEachWithInterval(conditionQuBits, conditionQuBits) { phaseShiftTerm(it) }
-
+            in 1..2 -> conditionQuBits.oneBitSequence.forEach { conditionQuBit ->
+                mQStateRange.drop(conditionQuBit)
+                    .forEachWithInterval(conditionQuBit, conditionQuBit) { phaseShiftTerm(it) }
+            }
             else -> mQStateRange.forEach {
                 if (it and conditionQuBits == conditionQuBits) phaseShiftTerm(it)
             }
