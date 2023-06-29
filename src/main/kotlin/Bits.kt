@@ -1,7 +1,5 @@
-package quantum
-
 @JvmInline
-value class Bits(val values: IntArray) {
+value class Bits(private val values: IntArray) {
 
     fun getBits(shift: Int, mask: Int): Int {
         val intIndex = shift / Int.SIZE_BITS
@@ -37,5 +35,3 @@ value class Bits(val values: IntArray) {
         const val Int_SIZE_BITS = Int.SIZE_BITS
     }
 }
-
-infix fun Int.splice(other: Int) = Bits(values = intArrayOf(this, other))

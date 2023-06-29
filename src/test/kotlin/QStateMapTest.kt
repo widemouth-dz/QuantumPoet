@@ -1,12 +1,10 @@
 import org.junit.jupiter.api.Test
-import quantum.QStateTermMap
-import quantum.QStateTerm
 
 class QStateMapTest {
     @Test
     fun value_class() {
         val qStateMap = QStateTermMap(1 shl 25)
-        val a = qStateMap[3]
+        val term = qStateMap[3]
     }
 
     @Test

@@ -1,8 +1,6 @@
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
-// typealias Complex = Pair<Double, Double>
-
 @JvmInline
 value class Complex private constructor(private val doubleArray: FloatXArray) {
     constructor(real: FloatX, image: FloatX) : this(floatXArrayOf(real, image))
@@ -17,9 +15,10 @@ value class Complex private constructor(private val doubleArray: FloatXArray) {
         set(value) {
             doubleArray[1] = value
         }
-    val modulusSquare get():FloatX = real * real + image * image
+    val modulusSquare get() = real * real + image * image
     val modulus get() = sqrt(modulusSquare)
     val argument get() = atan2(image, real)
+
     operator fun plus(other: Complex) = Complex(real.plus(other.real), image.plus(other.image))
 
     operator fun minus(other: Complex) = Complex(real.minus(other.real), image.minus(other.image))
@@ -29,7 +28,6 @@ value class Complex private constructor(private val doubleArray: FloatXArray) {
         val realNumerator = real * other.real + image * other.image
         val imageNumerator = image * other.real - real * other.image
         return Complex(realNumerator / denominator, imageNumerator / denominator)
-
     }
 
     operator fun div(other: FloatX) = Complex(real.div(other), image.div(other))

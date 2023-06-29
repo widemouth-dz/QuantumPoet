@@ -1,11 +1,3 @@
-package quantum
-
-import FloatX
-import FloatX_One
-import FloatX_Zero
-import iteration.drop
-import iteration.forEachWithInterval
-import toFloatX
 import java.lang.IllegalStateException
 import kotlin.math.*
 import kotlin.random.Random
@@ -100,13 +92,14 @@ class QPU internal constructor(val qBitCount: Int) {
     private fun collapse(targetQBits: Int, targetValue: Int) {
         when (targetQBits.countOneBits()) {
             0 -> Unit
-            in 1..2 -> targetQBits.oneBitSequence.forEach { targetQBit ->
-                val clearOffset = targetQBit and targetValue xor targetQBit
-                mQStateRange.drop(clearOffset).forEachWithInterval(targetQBit, targetQBit) {
+            1 -> {
+                val clearOffset = targetQBits and targetValue xor targetQBits
+                mQStateRange.drop(clearOffset).forEachWithInterval(sample = targetQBits, interval = targetQBits) {
                     mQStateTermMap[it] = mQStateTermMap[it].apply { vector.set(FloatX_Zero, FloatX_Zero) }
                 }
             }
-
+            // For 2 case: we can iterate with `1` case twice, the count of loops is equal to the `else` case,
+            // and without `if` action, but the actual performance is not better, because it is inferior in cache.
             else -> mQStateRange.forEach {
                 if (it and targetQBits != targetValue)
                     mQStateTermMap[it] = mQStateTermMap[it].apply { vector.set(FloatX_Zero, FloatX_Zero) }
@@ -116,7 +109,7 @@ class QPU internal constructor(val qBitCount: Int) {
 
     private fun peekQBitProbability(targetQBit: Int): FloatX {
         var sum = 0.0
-        mQStateRange.drop(targetQBit).forEachWithInterval(targetQBit, targetQBit) {
+        mQStateRange.drop(targetQBit).forEachWithInterval(sample = targetQBit, interval = targetQBit) {
             sum += mQStateTermMap[it].vector.modulusSquare.toDouble()
         }
         return sum.toFloatX()
@@ -148,11 +141,15 @@ class QPU internal constructor(val qBitCount: Int) {
 
         val filterMark = targetQBit or conditionMask
 
-        when (conditionMask) {
-            0 -> mQStateRange.forEachWithInterval(targetQBit, targetQBit) { hadamardPair(it, it + targetQBit) }
-            1 -> mQStateRange.drop(conditionMask).forEachWithInterval(conditionMask, conditionMask) {
-                if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
+        when (conditionMask.countOneBits()) {
+            0 -> mQStateRange.forEachWithInterval(sample = targetQBit, interval = targetQBit) {
+                hadamardPair(it, it + targetQBit)
             }
+
+            1 -> mQStateRange.drop(conditionMask)
+                .forEachWithInterval(sample = conditionMask, interval = conditionMask) {
+                    if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
+                }
 
             else -> mQStateRange.drop(conditionMask).forEach {
                 if (it and filterMark == conditionMask) hadamardPair(it, it + targetQBit)
@@ -182,12 +179,16 @@ class QPU internal constructor(val qBitCount: Int) {
         }
 
         val filterMark = targetQBit or conditionMask
-        when (conditionMask) {
-            0 -> mQStateRange.forEachWithInterval(targetQBit, targetQBit) { exchangePair(it, it + targetQBit) }
-            1 -> mQStateRange.drop(conditionMask).forEachWithInterval(conditionMask, conditionMask) {
-                if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
+        when (conditionMask.countOneBits()) {
+            0 -> mQStateRange.forEachWithInterval(sample = targetQBit, interval = targetQBit) {
+                exchangePair(it, it + targetQBit)
             }
-            // If quantum state is meet with the condition, it must be at least greater than conditionMask.
+
+            1 -> mQStateRange.drop(conditionMask)
+                .forEachWithInterval(sample = conditionMask, interval = conditionMask) {
+                    if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
+                }
+
             else -> mQStateRange.drop(conditionMask).forEach {
                 if (it and filterMark == conditionMask) exchangePair(it, it + targetQBit)
             }
@@ -195,7 +196,15 @@ class QPU internal constructor(val qBitCount: Int) {
         }
     }
 
-    private fun conditionPhase(degreeTheta: FloatX, conditionQuBits: Int = 0) {
+    fun phaseShift(degreeTheta: FloatX, targetQBits: Int = mAllMask, conditionQuBits: Int = 0) {
+        when (targetQBits.countOneBits()) {
+            0 -> Unit
+            1 -> conditionPhaseShift(degreeTheta, targetQBits or conditionQuBits)
+            else -> targetQBits.oneBitSequence.forEach { conditionPhaseShift(degreeTheta, it or conditionQuBits) }
+        }
+    }
+
+    fun conditionPhaseShift(degreeTheta: FloatX, conditionQuBits: Int = mAllMask) {
 
         val radian = degreeTheta * sDegreeToRadianFactor
         val sinTheta = sin(radian)
@@ -220,10 +229,9 @@ class QPU internal constructor(val qBitCount: Int) {
 
         when (conditionQuBits.countOneBits()) {
             0 -> mQStateRange.forEach { phaseShiftTerm(it) }
-            in 1..2 -> conditionQuBits.oneBitSequence.forEach { conditionQuBit ->
-                mQStateRange.drop(conditionQuBit)
-                    .forEachWithInterval(conditionQuBit, conditionQuBit) { phaseShiftTerm(it) }
-            }
+            1 -> mQStateRange.drop(conditionQuBits)
+                .forEachWithInterval(sample = conditionQuBits, interval = conditionQuBits) { phaseShiftTerm(it) }
+
             else -> mQStateRange.forEach {
                 if (it and conditionQuBits == conditionQuBits) phaseShiftTerm(it)
             }
@@ -232,7 +240,7 @@ class QPU internal constructor(val qBitCount: Int) {
 
 
     companion object {
-        val sDegreeToRadianFactor = 1 / 180 * PI.toFloatX()
+        val sDegreeToRadianFactor = (PI / 180).toFloatX()
         val sOneOverRoot2 = 1 / sqrt(2.0).toFloatX()
     }
 }

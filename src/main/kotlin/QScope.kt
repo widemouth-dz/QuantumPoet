@@ -1,7 +1,6 @@
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
-object QScope : CoroutineScope {
-    override val coroutineContext: CoroutineContext get() = Dispatchers.Default
-}
+@OptIn(ExperimentalCoroutinesApi::class)
+val QCDispatcher = Dispatchers.Default.limitedParallelism(4)
+val Dispatchers.QC get() = QCDispatcher

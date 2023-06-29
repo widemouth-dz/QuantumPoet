@@ -1,7 +1,7 @@
-package iteration
-
 /**
- * The fast iteration for transversal with interval.
+ * The fast iteration for `windowed`.
+ * @see Collection.windowed
+ * @see Sequence.windowed
  */
 inline fun IntRange.forEachWithInterval(sample: Int, interval: Int, drop: Int = 0, action: (Int) -> Unit) {
 

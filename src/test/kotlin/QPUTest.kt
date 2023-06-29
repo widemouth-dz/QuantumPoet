@@ -1,8 +1,19 @@
 import org.junit.jupiter.api.Test
-import quantum.QPU
 import kotlin.test.assertTrue
 
 class QPUTest {
+
+    @Test
+    fun qpu() {
+        QPU(2) {
+            write(0)
+            hadamard(1)
+            conditionNot(2, 1)
+            val result = read() // 00B or 11B
+            println(result.toString(2))
+        }
+    }
+
     @Test
     fun hadamard() {
         val qpu = QPU(20)
@@ -12,18 +23,16 @@ class QPUTest {
 
     @Test
     fun conditionHadamard() {
-        val qpu = QPU(3)
-        qpu.hadamard()
-        qpu.conditionHadamard(1 or 2, 4)
-//        qpu.conditionHadamard(1, 0)
-        qpu.print()
+        val qpu = QPU(28)
+        qpu.conditionHadamard((1 shl 20) - 1, 2)
+        qpu.print(4)
     }
 
     @Test
     fun not() {
         val qpu = QPU(25)
         qpu.not(1)
-//        qpu.print()
+        qpu.print(4)
     }
 
     @Test
@@ -35,10 +44,18 @@ class QPUTest {
 
     @Test
     fun read() {
-        val qpu = QPU(4)
+        val qpu = QPU(28)
         qpu.hadamard()
         val result = qpu.read()
         println(result.toString(2))
+        qpu.print(4)
+    }
+
+    @Test
+    fun phase() {
+        val qpu = QPU(4)
+        qpu.hadamard()
+        qpu.phaseShift(90.toFloatX(), 1)
         qpu.print(4)
     }
 

@@ -1,0 +1,1 @@
+fun QPU(qBitCount: Int, block: QPU.() -> Unit) = QPU(qBitCount).apply(block)
