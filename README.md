@@ -1,6 +1,9 @@
 # QuantumSim
 
-Supports for simulating 28 quantum bits.
+Supports for simulating 26 quantum bits, the performance of simulation is related to the number of bits.
+With each additional bit, the memory doubles and the speed is halved.
+
+M = 4B * 2 * 2^n 
 
 ## Quantum Computing Operations
 
